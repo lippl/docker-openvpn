@@ -1,0 +1,61 @@
+# Original credit: https://github.com/jpetazzo/dockvpn
+
+# Smallest base image
+FROM alpine:latest
+
+MAINTAINER Philipp Staiger <lippl1@msn.com>
+
+# Testing: pamtester
+RUN \
+	echo "**** install build packages ****" && \
+	echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories && \
+	apk add --update --no-cache --virtual=build-dependencies \
+		build-base tar make curl wget && \
+	echo "**** install runtime packages ****" && \
+    apk add --no-cache \
+		openvpn iptables bash easy-rsa \
+		openvpn-auth-pam google-authenticator pamtester \
+		python2 && \
+    ln -s /usr/share/easy-rsa/easyrsa /usr/local/bin && \
+	echo "**** getting DUO source code ****" && \
+	curl -sL https://api.github.com/repos/duosecurity/duo_openvpn/releases/latest | \
+		grep "tarball_url" | \
+		cut -d : -f 2,3 | \
+		tr -d \" | tr -d , | \
+		wget -qi - -O - | \
+		tar zxf - -C \tmp --strip-components=1 &&\
+	echo "**** make and install DUO ****" && \
+	make -C /tmp && \
+	make -C /tmp  install && \
+	echo "**** cleanup ****" && \
+	apk del --purge \
+		build-dependencies && \
+	rm -rf \
+		/tmp/* \
+		/var/tmp/* \
+		/root/.cache/pip \
+		/var/cache/apk/* \
+		/var/cache/distfiles/*	&& \
+	echo "**** DONE ****"
+
+# Needed by scripts
+ENV OPENVPN /etc/openvpn
+ENV EASYRSA /usr/share/easy-rsa
+ENV EASYRSA_PKI $OPENVPN/pki
+ENV EASYRSA_VARS_FILE $OPENVPN/vars
+
+# Prevents refused client connection because of an expired CRL
+ENV EASYRSA_CRL_DAYS 3650
+
+VOLUME ["/etc/openvpn"]
+
+# Internally uses port 1194/udp, remap using `docker run -p 443:1194/tcp`
+EXPOSE 1194/udp
+
+CMD ["ovpn_run"]
+
+ADD ./bin /usr/local/bin
+RUN chmod a+x /usr/local/bin/*
+
+# Add support for OTP authentication using a PAM module
+ADD ./otp/openvpn /etc/pam.d/
