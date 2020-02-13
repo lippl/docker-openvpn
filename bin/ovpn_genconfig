@@ -90,7 +90,7 @@ usage() {
     echo "                 [-r ROUTE ...]"
     echo "                 [-s SERVER_SUBNET]"
     echo "                 Enable two factor authentication using Cisco DUO:"
-    echo "                 [-A IKEY SKEY HOST]"
+    echo "                 [-A \"IKEY SKEY HOST\"]"
     echo
     echo "optional arguments:"
     echo " -2    Enable two factor authentication using Google Authenticator."
