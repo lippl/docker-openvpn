@@ -80,7 +80,7 @@ getroute() {
 }
 
 usage() {
-    echo "usage: $0 [-d]"
+    echo "usage: $0"
     echo "                  -u SERVER_PUBLIC_URL"
     echo "                 [-e EXTRA_SERVER_CONFIG ]"
     echo "                 [-E EXTRA_CLIENT_CONFIG ]"
@@ -89,6 +89,8 @@ usage() {
     echo "                 [-p PUSH ...]"
     echo "                 [-r ROUTE ...]"
     echo "                 [-s SERVER_SUBNET]"
+    echo "                 Enable two factor authentication using Cisco DUO:"
+    echo "                 [-A IKEY SKEY HOST]"
     echo
     echo "optional arguments:"
     echo " -2    Enable two factor authentication using Google Authenticator."
@@ -143,6 +145,7 @@ if [ -z "${EASYRSA_PKI:-}" ]; then
 fi
 
 OVPN_AUTH=''
+OVPN_DUO_CONFIG=''
 OVPN_CIPHER=''
 OVPN_CLIENT_TO_CLIENT=''
 OVPN_CN=''
@@ -172,10 +175,13 @@ OVPN_TLS_CIPHER=''
 [ -r "$OVPN_ENV" ] && source "$OVPN_ENV"
 
 # Parse arguments
-while getopts ":a:e:E:C:T:r:s:du:bcp:n:k:DNm:f:tz2" opt; do
+while getopts ":a:A:e:E:C:T:r:s:du:bcp:n:k:DNm:f:tz2" opt; do
     case $opt in
         a)
             OVPN_AUTH="$OPTARG"
+            ;;
+        A)
+            OVPN_DUO_CONFIG="$OPTARG"
             ;;
         e)
             mapfile -t TMP_EXTRA_SERVER_CONFIG <<< "$OPTARG"
@@ -249,6 +255,12 @@ while getopts ":a:e:E:C:T:r:s:du:bcp:n:k:DNm:f:tz2" opt; do
             ;;
         2)
             OVPN_OTP_AUTH=1
+            ;;
+        p)
+            mapfile -t TMP_PUSH <<< "$OPTARG"
+            for i in "${TMP_PUSH[@]}"; do
+              OVPN_PUSH+=("$i")
+            done
             ;;
         f)
             OVPN_FRAGMENT="$OPTARG"
@@ -382,10 +394,18 @@ echo -e "\n### Push Configurations Below" >> "$conf"
 cat $TMP_PUSH_CONFIGFILE >> "$conf"
 
 # Append optional OTP authentication support
-if [ -n "${OVPN_OTP_AUTH:-}" ]; then
+if [ -n "${OVPN_OTP_AUTH:-}" ] && [ -z "${OVPN_DUO_CONFIG:-}" ]; then
     echo -e "\n\n# Enable OTP+PAM for user authentication" >> "$conf"
     echo "plugin /usr/lib/openvpn/plugins/openvpn-plugin-auth-pam.so openvpn" >> "$conf"
     echo "reneg-sec 0" >> "$conf"
+# Append DUO authentication configuration
+elif [ -n ${#OVPN_DUO_CONFIG} ] && [ -z "${OVPN_OTP_AUTH:-}" ]; then
+  printf -v duo_cfg "%s " "${OVPN_DUO_CONFIG[@]}"
+  echo -e "\n\n# Enable DUO for user authentication" >> "$conf"
+  echo "plugin /opt/duo/duo_openvpn.so '${duo_cfg::-1}'" >> "$conf"
+  echo "reneg-sec 0" >> "$conf"
+else
+  echo "WARNING: Check your TFA Config - Only one TFA method can be configured"
 fi
 
 # Append extra server configurations
