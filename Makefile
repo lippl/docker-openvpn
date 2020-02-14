@@ -1,16 +1,13 @@
 NAME = registry.staiger.it/kylemanna/openvpn
 VERSION = latest
 
-.PHONY: build build-nocache test tag-latest push push-latest release git-tag-version
+.PHONY: build build-nocache tag-latest push push-latest release git-tag-version
 
 build:
-	docker build -t $(NAME):$(VERSION) --rm .
+	docker build -f Dockerfile.duo -t $(NAME):$(VERSION) --rm .
 
 build-nocache:
-	docker build -t $(NAME):$(VERSION) --no-cache --rm .
-
-test:
-	env NAME=$(NAME) VERSION=$(VERSION) bats test/test.bats
+	docker build -f Dockerfile.duo -t $(NAME):$(VERSION) --no-cache --rm .
 
 tag:
 	docker tag $(NAME):$(VERSION) $(NAME):$(VERSION)
@@ -24,7 +21,7 @@ push:
 push-latest:
 	docker push $(NAME):latest
 
-release: build test tag-latest push push-latest
+release: build tag-latest push push-latest
 
 git-tag-version: release
 	git tag -a v$(VERSION) -m "v$(VERSION)"

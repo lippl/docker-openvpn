@@ -3,7 +3,7 @@
 # Smallest base image
 FROM alpine:latest
 
-MAINTAINER Philipp Staiger <lippl1@msn.com>
+LABEL maintainer="Philipp Staiger <lippl1@msn.com>"
 
 # Testing: pamtester
 RUN \
