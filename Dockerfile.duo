@@ -18,22 +18,20 @@ RUN \
 		python2 && \
     ln -s /usr/share/easy-rsa/easyrsa /usr/local/bin && \
 	echo "**** getting DUO source code ****" && \
-	curl -sL https://api.github.com/repos/duosecurity/duo_openvpn/releases/latest | \
-		grep "tarball_url" | \
-		cut -d : -f 2,3 | \
-		tr -d \" | tr -d , | \
+	curl -sLX GET "https://api.github.com/repos/duosecurity/duo_openvpn/releases/latest" | \
+		awk '/tarball_url/{print $4;exit}' FS='[""]' \
 		wget -qi - -O - | \
 		tar zxf - -C \tmp --strip-components=1 &&\
 	echo "**** make and install DUO ****" && \
 	make -C /tmp && \
 	make -C /tmp  install && \
+	chmod 777 /tmp/ && \
 	echo "**** cleanup ****" && \
 	apk del --purge \
 		build-dependencies && \
 	rm -rf \
 		/tmp/* \
 		/var/tmp/* \
-		/root/.cache/pip \
 		/var/cache/apk/* \
 		/var/cache/distfiles/*	&& \
 	echo "**** DONE ****"
