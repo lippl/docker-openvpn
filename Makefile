@@ -4,10 +4,10 @@ VERSION = latest
 .PHONY: build build-nocache tag-latest push push-latest release git-tag-version
 
 build:
-	docker build -f Dockerfile.duo -t $(NAME):$(VERSION) --rm .
+	docker build --pull -f Dockerfile.duo -t $(NAME):$(VERSION) --rm .
 
 build-nocache:
-	docker build -f Dockerfile.duo -t $(NAME):$(VERSION) --no-cache --rm .
+	docker build --pull -f Dockerfile.duo -t $(NAME):$(VERSION) --no-cache --rm .
 
 tag:
 	docker tag $(NAME):$(VERSION) $(NAME):$(VERSION)
@@ -21,7 +21,7 @@ push:
 push-latest:
 	docker push $(NAME):latest
 
-release: build tag-latest push push-latest
+release: build-nocache push
 
 git-tag-version: release
 	git tag -a v$(VERSION) -m "v$(VERSION)"

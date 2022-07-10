@@ -10,30 +10,30 @@ RUN \
 	echo "**** install build packages ****" && \
 	echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories && \
 	apk add --update --no-cache --virtual=build-dependencies \
-		build-base tar make curl wget && \
+	build-base tar make curl wget && \
 	echo "**** install runtime packages ****" && \
-    apk add --no-cache --update \
-		openvpn iptables bash easy-rsa \
-		openvpn-auth-pam google-authenticator pamtester libqrencode \
-		python2 && \
-    ln -s /usr/share/easy-rsa/easyrsa /usr/local/bin && \
+	apk add --no-cache --update \
+	openvpn iptables bash easy-rsa \
+	openvpn-auth-pam google-authenticator pamtester libqrencode \
+	python3 && \
+	ln -s /usr/share/easy-rsa/easyrsa /usr/local/bin && \
 	echo "**** getting DUO source code ****" && \
 	curl -sLX GET "https://api.github.com/repos/duosecurity/duo_openvpn/releases/latest" | \
-		awk '/tarball_url/{print $4;exit}' FS='[""]' | \
-		wget -qi - -O - | \
-		tar zxf - -C /tmp --strip-components=1 && \
+	awk '/tarball_url/{print $4;exit}' FS='[""]' | \
+	wget -qi - -O - | \
+	tar zxf - -C /tmp --strip-components=1 && \
 	echo "**** make and install DUO ****" && \
 	make -C /tmp && \
 	make -C /tmp  install && \
 	chmod 777 /tmp/ && \
 	echo "**** cleanup ****" && \
 	apk del --purge \
-		build-dependencies && \
+	build-dependencies && \
 	rm -rf \
-		/tmp/* \
-		/var/tmp/* \
-		/var/cache/apk/* \
-		/var/cache/distfiles/*	&& \
+	/tmp/* \
+	/var/tmp/* \
+	/var/cache/apk/* \
+	/var/cache/distfiles/*	&& \
 	echo "**** DONE ****"
 
 # Needed by scripts
